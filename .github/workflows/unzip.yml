@@ -27,39 +27,36 @@ jobs:
 
           for f in "${zipfiles[@]}"; do
             echo "📦 جاري فك ضغط: $f"
-            unzip -o "$f" -d temp_extract
+            rm -rf "$RUNNER_TEMP/extract"
+            mkdir -p "$RUNNER_TEMP/extract"
+            unzip -q -o "$f" -d "$RUNNER_TEMP/extract"
 
-            if [ -d temp_extract/CALCULATOR-APP-main ]; then
-              echo "🔄 استبدال الملفات (مع حماية ملفات الـ workflows)..."
-              
-              # حذف مجلد .github من النسخة المستخرجة حتى لا يعدل الـ workflows
-              rm -rf temp_extract/CALCULATOR-APP-main/.github
-              
-              # استبدال الملفات
-              rm -f index.html sw.js manifest.webmanifest
-              cp -a temp_extract/CALCULATOR-APP-main/. .
+            entries=("$RUNNER_TEMP"/extract/*)
+            if [ ${#entries[@]} -eq 1 ] && [ -d "${entries[0]}" ]; then
+              src="${entries[0]}"
             else
-              rm -rf temp_extract/.github
-              cp -a temp_extract/. .
+              src="$RUNNER_TEMP/extract"
             fi
 
-            rm -rf temp_extract
+            echo "🔄 استبدال الملفات..."
+            find . -mindepth 1 -maxdepth 1 \
+              ! -name '.git' ! -name '.github' ! -name '*.zip' \
+              -exec rm -rf {} +
+
+            tar -C "$src" --exclude='./.github' -cf - . | tar -xf -
+
             rm -f "$f"
-            echo "🗑️ تم حذف $f"
           done
 
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
           git add -A
-          
           if git diff --cached --quiet; then
-            echo "ℹ️ لا توجد تغييرات"
+            echo "لا توجد تغييرات"
             exit 0
           fi
-          
           git commit -m "Unzip new version and replace old files"
-          git pull --rebase origin main || true
-          git push
+          git pull --rebase origin main
+          git push origin HEAD:main
