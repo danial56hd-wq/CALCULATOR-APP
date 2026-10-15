@@ -13,43 +13,43 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip and replace old files
+      - name: Unzip and replace old version
         shell: bash
         run: |
+          set -e
           shopt -s nullglob
-          found=0
 
-          for f in *.zip; do
-            found=1
-            echo "📦 Extracting: $f"
-            
-            # فك الضغط
-            unzip -o "$f" -d .
-            
-            # البحث عن المجلد الداخلي (مثل CALCULATOR-APP-main)
-            for dir in */; do
-              if [ -d "$dir" ] && [ "$dir" != ".git/" ] && [ "$dir" != ".github/" ]; then
-                echo "📁 Moving contents from $dir to root..."
-                # نقل كل الملفات من المجلد الداخلي إلى الجذر (مع الاستبدال)
-                shopt -s dotglob
-                mv -f "$dir"* . 2>/dev/null || true
-                shopt -u dotglob
-                # حذف المجلد الفارغ
-                rmdir "$dir" 2>/dev/null || rm -rf "$dir"
-              fi
-            done
-            
-            # حذف ملف الـ ZIP
-            rm -f -- "$f"
-            echo "✅ Done with $f"
-          done
-
-          if [ "$found" -eq 0 ]; then
-            echo "❌ ERROR: No ZIP files found in the repository"
+          zipfiles=(*.zip)
+          if [ ${#zipfiles[@]} -eq 0 ]; then
+            echo "❌ لا يوجد أي ملف ZIP في المستودع"
             exit 1
           fi
 
-          echo "📋 Current files after extraction:"
+          for f in "${zipfiles[@]}"; do
+            echo "📦 جاري فك ضغط: $f"
+            unzip -o "$f" -d temp_extract
+
+            # نقل محتويات المجلد الداخلي إلى الجذر (استبدال كامل)
+            if [ -d temp_extract/CALCULATOR-APP-main ]; then
+              echo "🔄 استبدال الملفات القديمة بالنسخة الجديدة..."
+              # حذف الملفات القديمة المهمة أولاً لتجنب التعارض
+              rm -f index.html sw.js manifest.webmanifest
+              # نقل كل شيء
+              cp -a temp_extract/CALCULATOR-APP-main/. .
+              echo "✅ تم نقل الملفات بنجاح"
+            else
+              echo "⚠️ لم يتم العثور على مجلد CALCULATOR-APP-main داخل الـ ZIP"
+              cp -a temp_extract/. .
+            fi
+
+            # تنظيف
+            rm -rf temp_extract
+            rm -f "$f"
+            echo "🗑️ تم حذف $f"
+          done
+
+          echo ""
+          echo "📋 الملفات الحالية في الجذر:"
           ls -la
 
       - name: Commit and push
@@ -60,9 +60,9 @@ jobs:
           git add -A
           
           if git diff --cached --quiet; then
-            echo "ℹ️ No changes to commit"
+            echo "ℹ️ لا توجد تغييرات للـ commit"
             exit 0
           fi
           
-          git commit -m "Unzip and replace project files with new version"
+          git commit -m "Unzip new version and replace old files"
           git push
