@@ -22,7 +22,7 @@ jobs:
 
           zipfiles=(*.zip)
           if [ ${#zipfiles[@]} -eq 0 ]; then
-            echo "❌ لا يوجد أي ملف ZIP في المستودع"
+            echo "❌ لا يوجد أي ملف ZIP"
             exit 1
           fi
 
@@ -31,12 +31,10 @@ jobs:
             unzip -o "$f" -d temp_extract
 
             if [ -d temp_extract/CALCULATOR-APP-main ]; then
-              echo "🔄 استبدال الملفات القديمة بالنسخة الجديدة..."
+              echo "🔄 استبدال الملفات..."
               rm -f index.html sw.js manifest.webmanifest
               cp -a temp_extract/CALCULATOR-APP-main/. .
-              echo "✅ تم نقل الملفات بنجاح"
             else
-              echo "⚠️ لم يتم العثور على مجلد CALCULATOR-APP-main"
               cp -a temp_extract/. .
             fi
 
@@ -44,10 +42,6 @@ jobs:
             rm -f "$f"
             echo "🗑️ تم حذف $f"
           done
-
-          echo ""
-          echo "📋 الملفات الحالية:"
-          ls -la
 
       - name: Commit and push
         run: |
@@ -62,4 +56,7 @@ jobs:
           fi
           
           git commit -m "Unzip new version and replace old files"
+          
+          # حل مشكلة الـ rejected
+          git pull --rebase origin main
           git push
