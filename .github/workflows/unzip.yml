@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: write
-  workflows: write
 
 jobs:
   unzip:
@@ -31,10 +30,16 @@ jobs:
             unzip -o "$f" -d temp_extract
 
             if [ -d temp_extract/CALCULATOR-APP-main ]; then
-              echo "🔄 استبدال الملفات..."
+              echo "🔄 استبدال الملفات (مع حماية ملفات الـ workflows)..."
+              
+              # حذف مجلد .github من النسخة المستخرجة حتى لا يعدل الـ workflows
+              rm -rf temp_extract/CALCULATOR-APP-main/.github
+              
+              # استبدال الملفات
               rm -f index.html sw.js manifest.webmanifest
               cp -a temp_extract/CALCULATOR-APP-main/. .
             else
+              rm -rf temp_extract/.github
               cp -a temp_extract/. .
             fi
 
@@ -56,7 +61,5 @@ jobs:
           fi
           
           git commit -m "Unzip new version and replace old files"
-          
-          # حل مشكلة الـ rejected
-          git pull --rebase origin main
+          git pull --rebase origin main || true
           git push
