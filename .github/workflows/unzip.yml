@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: write
+  workflows: write
 
 jobs:
   unzip:
@@ -29,27 +30,23 @@ jobs:
             echo "📦 جاري فك ضغط: $f"
             unzip -o "$f" -d temp_extract
 
-            # نقل محتويات المجلد الداخلي إلى الجذر (استبدال كامل)
             if [ -d temp_extract/CALCULATOR-APP-main ]; then
               echo "🔄 استبدال الملفات القديمة بالنسخة الجديدة..."
-              # حذف الملفات القديمة المهمة أولاً لتجنب التعارض
               rm -f index.html sw.js manifest.webmanifest
-              # نقل كل شيء
               cp -a temp_extract/CALCULATOR-APP-main/. .
               echo "✅ تم نقل الملفات بنجاح"
             else
-              echo "⚠️ لم يتم العثور على مجلد CALCULATOR-APP-main داخل الـ ZIP"
+              echo "⚠️ لم يتم العثور على مجلد CALCULATOR-APP-main"
               cp -a temp_extract/. .
             fi
 
-            # تنظيف
             rm -rf temp_extract
             rm -f "$f"
             echo "🗑️ تم حذف $f"
           done
 
           echo ""
-          echo "📋 الملفات الحالية في الجذر:"
+          echo "📋 الملفات الحالية:"
           ls -la
 
       - name: Commit and push
@@ -60,7 +57,7 @@ jobs:
           git add -A
           
           if git diff --cached --quiet; then
-            echo "ℹ️ لا توجد تغييرات للـ commit"
+            echo "ℹ️ لا توجد تغييرات"
             exit 0
           fi
           
