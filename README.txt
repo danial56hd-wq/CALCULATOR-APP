@@ -12,7 +12,7 @@ Quick start:
 3. Install as PWA for offline use
 
 New in this version:
-- Live metal prices (Gold, Silver, Platinum, Palladium via Coinbase)
+- Live metal prices (Gold, Silver, Platinum, Palladium via gold-api.com)
 - Fuel & energy prices (manual + reference)
 - Native Share button
 - Expanded developer links
